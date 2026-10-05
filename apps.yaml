@@ -1,0 +1,116 @@
+# ---------- Identités (utilisées par l'AuthorizationPolicy) ----------
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: client }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: { name: intrus }
+---
+# ---------- hello : 1 Service, 2 versions ----------
+apiVersion: v1
+kind: Service
+metadata: { name: hello }
+spec:
+  selector: { app: hello }          # pas de version: .. afin de sélectionner v1 ET v2
+  ports:
+    - name: http                    # le nom "http" aide Istio à détecter le protocole
+      port: 5678
+      targetPort: 5678
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: hello-v1 }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: hello, version: v1 } }
+  template:
+    metadata: { labels: { app: hello, version: v1 } }
+    spec:
+      containers:
+        - name: hello
+          image: hashicorp/http-echo
+          args: ["-text=hello depuis v1"]
+          ports: [{ containerPort: 5678 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: hello-v2 }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: hello, version: v2 } }
+  template:
+    metadata: { labels: { app: hello, version: v2 } }
+    spec:
+      containers:
+        - name: hello
+          image: hashicorp/http-echo
+          args: ["-text=hello depuis v2 (nouvelle version)"]
+          ports: [{ containerPort: 5678 }]
+---
+# ---------- httpbin ----------
+apiVersion: v1
+kind: Service
+metadata: { name: httpbin }
+spec:
+  selector: { app: httpbin }
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: httpbin }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: httpbin } }
+  template:
+    metadata: { labels: { app: httpbin } }
+    spec:
+      containers:
+        - name: httpbin
+          image: mccutchen/go-httpbin:v2.15.0
+          ports: [{ containerPort: 8080 }]
+---
+# ---------- Clients ----------
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: client }
+spec:
+  selector: { matchLabels: { app: client } }
+  template:
+    metadata: { labels: { app: client } }
+    spec:
+      serviceAccountName: client
+      containers:
+        - name: curl
+          image: curlimages/curl
+          command: ["sleep", "infinity"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: intrus }
+spec:
+  selector: { matchLabels: { app: intrus } }
+  template:
+    metadata: { labels: { app: intrus } }
+    spec:
+      serviceAccountName: intrus # → bloqué
+      containers:
+        - name: curl
+          image: curlimages/curl
+          command: ["sleep", "infinity"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: fortio }
+spec:
+  selector: { matchLabels: { app: fortio } }
+  template:
+    metadata: { labels: { app: fortio } }
+    spec:
+      containers:
+        - name: fortio
+          image: fortio/fortio
+          args: ["server"]

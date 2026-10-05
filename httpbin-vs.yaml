@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata: { name: httpbin }
+spec:
+  hosts: [httpbin]            # trafic interne au mesh (pas de gateway ici)
+  http:
+    - timeout: 10s # timeout GLOBAL (toutes tentatives confondues)
+      retries:
+        attempts: 4                # nombre de retries
+        perTryTimeout: 2s          # timeout de CHAQUE tentative
+        retryOn: 5xx,connect-failure,reset
+      route:
+        - destination: { host: httpbin, port: { number: 8000 } }
+
+
+# → client(alias de image curl) curl -s -w "\n%{http_code} en %{time_total}s\n" httpbin:8000/delay/5
+#upstream request timeout
+#504 en 2.008758s
+

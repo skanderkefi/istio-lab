@@ -1,0 +1,23 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata: { name: hello }
+spec:
+  host: hello
+  subsets:
+    - name: v1
+      labels: { version: v1 }   # = pods portant le label version=v1
+    - name: v2
+      labels: { version: v2 }
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata: { name: hello }
+spec:
+  hosts: ["*"]
+  gateways: [hello-gateway]
+  http:
+    - route:
+        - destination: { host: hello, subset: v1, port: { number: 5678 } }
+          weight: 90
+        - destination: { host: hello, subset: v2, port: { number: 5678 } }
+          weight: 10

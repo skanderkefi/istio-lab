@@ -1,0 +1,23 @@
+# Le Gateway ouvre une porte : « écoute sur le port 80, accepte tous les hosts ». Il ne sait pas où envoyer le trafic.
+# Le VirtualService relié à ce Gateway dit : « ce qui arrive par cette porte, envoie-le au Service hello ».
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata: { name: hello-gateway }
+spec:
+  selector:
+    istio: ingress            # applique cette config au pod gateway installé à l'étape 2
+  servers:
+    - port: { number: 80, name: http, protocol: HTTP }
+      hosts: ["*"]            # accepte n'importe quel nom de domaine
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata: { name: hello }
+spec:
+  hosts: ["*"]
+  gateways: [hello-gateway]   # cette règle s'applique au trafic arrivant par le gateway
+  http:
+    - route:
+        - destination:
+            host: hello       # le Service Kubernetes
+            port: { number: 5678 }

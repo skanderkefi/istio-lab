@@ -1,0 +1,15 @@
+# lien claude: https://claude.ai/chat/b7b1026e-3c3b-4dc5-8015-ff3deb3e1393
+# Istio s'installe en 3 charts, dans cet ordre précis :
+helm repo add istio https://istio-release.storage.googleapis.com/charts
+helm repo update
+
+# 1) base : installe les CRD (les nouveaux types Kubernetes : VirtualService, Gateway...)
+helm install istio-base istio/base -n istio-system --create-namespace --wait
+
+# 2) istiod : le control plane
+#    accessLogFile : chaque Envoy écrit ses logs de requêtes (indispensable pour voir les retries)
+helm install istiod istio/istiod -n istio-system --wait \
+  --set meshConfig.accessLogFile=/dev/stdout
+
+# 3) gateway : l'Envoy d'entrée du cluster
+helm install istio-ingress istio/gateway -n istio-ingress --create-namespace --wait

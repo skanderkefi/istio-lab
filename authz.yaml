@@ -1,0 +1,19 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata: { name: httpbin-policy }
+spec:
+  selector:
+    matchLabels: { app: httpbin }   # appliqué à l'Envoy des pods httpbin
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals: ["cluster.local/ns/demo/sa/client"]   # identité mTLS
+      to:
+        - operation:
+            methods: ["GET"]
+            paths: ["/get", "/headers"]
+
+
+# La règle d'or : dès qu'une politique ALLOW existe sur une workload, tout ce qui ne correspond à aucune règle est refusé.
+# accès depuis app non listée (to:...)→ RBAC access denied, si listé mais par auth (non post) → 403

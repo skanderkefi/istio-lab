@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata: { name: httpbin }
+spec:
+  host: httpbin
+  trafficPolicy:
+    connectionPool: # Connection pool : limiter la pression sur un service
+      tcp:
+        maxConnections: 1            # 1 seule connexion TCP simultanée vers httpbin
+      http:
+        http1MaxPendingRequests: 1   # 1 seule requête en file d'attente
+        maxRequestsPerConnection: 1  # pas de réutilisation de connexion
+    outlierDetection:
+      consecutive5xxErrors: 3        # 3 erreurs 5xx d'affilée...
+      interval: 5s                   # ...vérifié toutes les 5 s...
+      baseEjectionTime: 30s          # ...=> pod exclu pendant 30 s
+      maxEjectionPercent: 100

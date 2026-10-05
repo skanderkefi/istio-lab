@@ -1,0 +1,10 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata: { name: default }
+spec:
+  mtls:
+    mode: STRICT
+
+
+# avec  kubectl run test -n default --image=curlimages/curl --rm -it --restart=Never -- curl -s -m 3 httpbin.demo:8000/get
+#→ échec (connection reset) : sans certificat, plus d'accès
