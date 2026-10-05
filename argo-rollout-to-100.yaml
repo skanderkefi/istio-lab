@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata: { name: hello }
+spec:
+  strategy:
+    canary:
+      trafficRouting:
+        istio:
+          virtualService: { name: hello }
+          destinationRule: { name: hello, canarySubsetName: v2, stableSubsetName: v1 }
+      steps:
+        - setWeight: 10
+        - pause: { duration: 15m }
+        - analysis: { templates: [{ templateName: success-rate }] }  # requête Prometheus, ex. succès >= 99 %
+        - setWeight: 50
+        - pause: { duration: 15m }
+        - setWeight: 100
